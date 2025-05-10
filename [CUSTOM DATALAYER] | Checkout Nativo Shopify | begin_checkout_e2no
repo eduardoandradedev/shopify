@@ -1,37 +1,45 @@
 analytics.subscribe('checkout_started', (event) => {
 
-  // ⚠️ Mantenha esse GTM loader APENAS se o container não for carregado no tema
-  (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+  // ⚠️ Só use este loader se o GTM ainda não estiver no tema
+  (function(w,d,s,l,i){
+    w[l]=w[l]||[];
+    w[l].push({'gtm.start': new Date().getTime(), event:'gtm.js'});
+    var f=d.getElementsByTagName(s)[0],
+        j=d.createElement(s),
+        dl=l!='dataLayer'?'&l='+l:'';
+    j.async=true;
+    j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;
+    f.parentNode.insertBefore(j,f);
   })(window,document,'script','dataLayer','GTM-xxxxx');
 
   window.dataLayer = window.dataLayer || [];
 
   console.log('custom event', event);
 
+  const checkout = event.data.checkout;
+  const shipping = checkout.shippingAddress;
+
   window.dataLayer.push({
     event: 'begin_checkout_e2no',
-    debug_mode: true, // <-- Ativa visualização no GA4 DebugView
+    debug_mode: true,
     fired_from: 'custom_pixel',
-    token: event.data.checkout.token,
+    token: checkout.token,
     user_data: {
-      email: event.data.checkout.email,
-      phone: event.data.checkout.shippingAddress.phone,
-      first_name: event.data.checkout.shippingAddress.firstName,
-      last_name: event.data.checkout.shippingAddress.lastName,
-      address: event.data.checkout.shippingAddress.address1,
-      city: event.data.checkout.shippingAddress.city,
-      region: event.data.checkout.shippingAddress.provinceCode,
-      country: event.data.checkout.shippingAddress.countryCode,
-      zip: event.data.checkout.shippingAddress.zip
+      email: checkout.email,
+      phone: shipping.phone,
+      first_name: shipping.firstName,
+      last_name: shipping.lastName,
+      address: shipping.address1,
+      city: shipping.city,
+      region: shipping.provinceCode,
+      country: shipping.countryCode,
+      zip: shipping.zip
     },
     ecommerce: {
-      quantity: event.data.checkout.lineItems.length,
-      value: event.data.checkout.totalPrice.amount,
-      currency: event.data.checkout.currencyCode,
-      items: event.data.checkout.lineItems.map(lineItem => ({
+      quantity: checkout.lineItems.length,
+      value: parseFloat(checkout.totalPrice.amount),
+      currency: checkout.currencyCode,
+      items: checkout.lineItems.map(lineItem => ({
         item_id: lineItem.variant.product.id,
         item_name: lineItem.title,
         item_brand: lineItem.variant.product.vendor,
