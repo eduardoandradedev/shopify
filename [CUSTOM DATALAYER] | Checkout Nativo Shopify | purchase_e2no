@@ -1,0 +1,55 @@
+analytics.subscribe('checkout_completed', (event) => {
+
+  // ⚠️ Evite duplicidade de GTM se ele já estiver no tema
+  (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+  })(window,document,'script','dataLayer','GTM-xxxxxx');
+
+  window.dataLayer = window.dataLayer || [];
+
+  console.log('custom event', event);
+
+  window.dataLayer.push({
+    event: 'purchase_e2no',
+    debug_mode: true, // Visualização no GA4 DebugView
+    fired_from: 'custom_pixel',
+    token: event.data.checkout.token,
+    transaction_id: event.data.checkout.order.id,
+    currency: event.data.checkout.currencyCode,
+    value: event.data.checkout.totalPrice.amount,
+    shipping: event.data.checkout.shippingLine?.price?.amount || 0,
+    tax: event.data.checkout.totalTax || 0,
+    new_customer: event.data.checkout.order.customer.isFirstOrder || false,
+    coupon: event.data.checkout.discountApplications?.[0]?.title || null,
+    user_data: {
+      email: event.data.checkout.email,
+      phone: event.data.checkout.shippingAddress.phone,
+      first_name: event.data.checkout.shippingAddress.firstName,
+      last_name: event.data.checkout.shippingAddress.lastName,
+      address: event.data.checkout.shippingAddress.address1,
+      city: event.data.checkout.shippingAddress.city,
+      region: event.data.checkout.shippingAddress.provinceCode,
+      country: event.data.checkout.shippingAddress.countryCode,
+      zip: event.data.checkout.shippingAddress.zip
+    },
+    ecommerce: {
+      quantity: event.data.checkout.lineItems.length,
+      value: event.data.checkout.totalPrice.amount,
+      currency: event.data.checkout.currencyCode,
+      items: event.data.checkout.lineItems.map(lineItem => ({
+        item_id: lineItem.variant.product.id,
+        item_name: lineItem.title,
+        item_brand: lineItem.variant.product.vendor,
+        item_category: lineItem.variant.product.type,
+        item_sku: lineItem.variant.sku,
+        item_variant: lineItem.variant.id,
+        variant_name: lineItem.variant.title,
+        imageURL: lineItem.variant.image?.url ? 'https:' + lineItem.variant.image.url : null,
+        price: parseFloat(lineItem.variant.price.amount),
+        quantity: parseInt(lineItem.quantity, 10)
+      }))
+    }
+  });
+});
