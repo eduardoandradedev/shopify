@@ -1,0 +1,243 @@
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+
+<!-- Google Tag Manager -->
+<script>
+(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-XXXXXXX');
+</script>
+<!-- End Google Tag Manager -->
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <meta charset="UTF-8">
+  <title>Simulador Completo de Checkout - Shopify + GTM</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    .stage { display: none; margin-bottom: 20px; }
+    .stage.active { display: block; }
+    label { display: block; margin-top: 10px; }
+    input { width: 300px; padding: 5px; }
+    button { margin-top: 20px; padding: 10px 15px; }
+  </style>
+  <script>
+    let currentStage = 0;
+    const stages = ['cart', 'shipping', 'payment', 'review'];
+
+    const checkoutData = {
+      token: 'fake-checkout-token-123',
+      user_data: {},
+      ecommerce: {
+        quantity: 3,
+        value: 587,
+        currency: 'BRL',
+        items: [
+          {
+            item_id: '987654321',
+            item_name: 'Camiseta Performance',
+            item_brand: 'Marca Y',
+            item_category: 'Roupas',
+            item_sku: 'SKU-5678',
+            item_variant: 'VAR-5678',
+            variant_name: 'Azul / M',
+            imageURL: 'https://via.placeholder.com/100',
+            price: 199,
+            quantity: 1
+          },
+          {
+            item_id: '123123123',
+            item_name: 'Tênis Corrida Pro',
+            item_brand: 'Marca X',
+            item_category: 'Calçados',
+            item_sku: 'SKU-9999',
+            item_variant: 'VAR-9999',
+            variant_name: 'Preto / 42',
+            imageURL: 'https://via.placeholder.com/100',
+            price: 299,
+            quantity: 1
+          },
+          {
+            item_id: '321321321',
+            item_name: 'Short Esportivo Dry',
+            item_brand: 'Marca Z',
+            item_category: 'Roupas',
+            item_sku: 'SKU-3333',
+            item_variant: 'VAR-3333',
+            variant_name: 'Cinza / G',
+            imageURL: 'https://via.placeholder.com/100',
+            price: 89,
+            quantity: 1
+          }
+        ]
+      },
+      debug_mode: true,
+      fired_from: 'checkout_simulator'
+    };
+
+    function showStage(index) {
+      document.querySelectorAll('.stage').forEach((el, i) => {
+        el.classList.toggle('active', i === index);
+      });
+      currentStage = index;
+    }
+
+    function simulateEvent(eventName) {
+      const data = { ...checkoutData, event: eventName };
+      window.dataLayer = window.dataLayer || [];
+      window.dataLayer.push(data);
+      console.log("Evento simulado:", data);
+    }
+
+    function nextStage() {
+      if (currentStage === 0) {
+        simulateEvent('begin_checkout_e2no');
+      } else if (currentStage === 1) {
+        checkoutData.user_data = {
+          email: document.getElementById('email').value,
+          phone: document.getElementById('phone').value,
+          first_name: document.getElementById('first_name').value,
+          last_name: document.getElementById('last_name').value,
+          address: document.getElementById('address').value,
+          city: document.getElementById('city').value,
+          region: document.getElementById('region').value,
+          country: document.getElementById('country').value,
+          zip: document.getElementById('zip').value
+        };
+        simulateEvent('add_shipping_info_e2no');
+      } else if (currentStage === 2) {
+        simulateEvent('add_payment_info_e2no');
+      } else if (currentStage === 3) {
+        
+checkoutData.transaction_id = 'TXN-123456';
+checkoutData.coupon = document.getElementById('coupon').value;
+checkoutData.shipping = parseFloat(document.getElementById('shipping').value || 0);
+checkoutData.tax = parseFloat(document.getElementById('tax').value || 0);
+checkoutData.client_id = 'GA1.1.123456789.1234567890'; // simulação
+checkoutData._ga = 'GA1.1.123456789.1234567890'; // simulação
+checkoutData.fbp = 'fb.1.1690000000000.1234567890'; // simulação
+checkoutData.fbc = 'fb.1.1690000000000.0987654321'; // simulação
+
+        simulateEvent('purchase_e2no');
+        alert('Simulação concluída! Verifique o DebugView ou GTM Preview.');
+        return;
+      }
+      showStage(currentStage + 1);
+    }
+
+    
+window.onload = () => {
+  showStage(0);
+  const cartList = document.getElementById('cart-items');
+  checkoutData.ecommerce.items.forEach(item => {
+    const li = document.createElement('li');
+    li.innerText = `${item.item_name} (${item.quantity}x R$${item.price})`;
+    cartList.appendChild(li);
+  });
+};
+
+  </script>
+</head>
+
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-XXXXXXX"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+
+<body style="background-color: #f6f6f7; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+<style>
+  .shopify-checkout-container {
+    max-width: 800px;
+    margin: 40px auto;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    padding: 40px;
+  }
+  .stage {
+    display: none;
+  }
+  .stage.active {
+    display: block;
+  }
+  .checkout-header {
+    font-size: 24px;
+    font-weight: 500;
+    border-bottom: 1px solid #e1e1e1;
+    padding-bottom: 20px;
+    margin-bottom: 30px;
+  }
+  label {
+    margin-bottom: 6px;
+    font-size: 14px;
+    font-weight: 500;
+  }
+  input {
+    font-size: 16px;
+  }
+  button.btn-primary {
+    background-color: #1990c6;
+    border-color: #1990c6;
+    font-weight: 500;
+  }
+  .checkout-footer {
+    margin-top: 60px;
+    font-size: 14px;
+    color: #737373;
+    text-align: center;
+  }
+</style>
+
+<div class="shopify-checkout-container">
+<div class="card shadow p-4">
+
+
+  <div class='checkout-header'>Simulador de Checkout – Shopify + GTM</div>
+
+  <div class="stage" id="stage-cart">
+    <h4 class='text-primary'>Etapa 1: Carrinho</h4>
+    <ul id="cart-items"></ul>
+    <button class='btn btn-primary' onclick="nextStage()">Iniciar Checkout</button>
+  </div>
+
+  <div class="stage" id="stage-shipping">
+    <h4 class='text-primary'>Etapa 2: Envio</h4>
+    <label class='form-label mt-3'>Email: <input class='form-control' type="email" id="email" value="user@example.com" /></label>
+    <label class='form-label mt-3'>Telefone: <input class='form-control' type="text" id="phone" value="11999999999" /></label>
+    <label class='form-label mt-3'>Nome: <input class='form-control' type="text" id="first_name" value="Lucas" /></label>
+    <label class='form-label mt-3'>Sobrenome: <input class='form-control' type="text" id="last_name" value="Silva" /></label>
+    <label class='form-label mt-3'>Endereço: <input class='form-control' type="text" id="address" value="Rua Exemplo, 123" /></label>
+    <label class='form-label mt-3'>Cidade: <input class='form-control' type="text" id="city" value="São Paulo" /></label>
+    <label class='form-label mt-3'>Estado: <input class='form-control' type="text" id="region" value="SP" /></label>
+    <label class='form-label mt-3'>País: <input class='form-control' type="text" id="country" value="BR" /></label>
+    <label class='form-label mt-3'>CEP: <input class='form-control' type="text" id="zip" value="01234-000" />
+</label>
+<label class='form-label mt-3'>Cupom de Desconto: <input class='form-control' type="text" id="coupon" value="FRETEGRATIS10" /></label>
+<label class='form-label mt-3'>Frete (R$): <input class='form-control' type="number" id="shipping" value="20" /></label>
+<label class='form-label mt-3'>Imposto (R$): <input class='form-control' type="number" id="tax" value="35" /></label>
+<button class='btn btn-primary' onclick="nextStage()">Continuar para Pagamento</button>
+
+  </div>
+
+  <div class="stage" id="stage-payment">
+    <h4 class='text-primary'>Etapa 3: Pagamento</h4>
+    <p>(Simulação de pagamento: clique em continuar)</p>
+    <button class='btn btn-primary' onclick="nextStage()">Revisar Pedido</button>
+  </div>
+
+  <div class="stage" id="stage-review">
+    <h4 class='text-primary'>Etapa 4: Revisão</h4>
+    <p>Confirme a compra com os dados preenchidos.</p>
+    <button class='btn btn-primary' onclick="nextStage()">Finalizar Compra</button>
+  </div>
+
+  <div class='checkout-footer'>Abra o <strong>GTM Preview</strong> ou o <strong>GA4 DebugView</strong> para acompanhar os eventos.</div>
+
+</div></div>
+<script src='https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js'></script>
+</body>
+</html>
