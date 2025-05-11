@@ -1,106 +1,93 @@
-// === customPixelEvents.js ===
-const customPixelEvents = (() => {
-  const GTM_ID = 'GTM-XXXXXXX'; // Insira seu ID real
+const GTM_ID = 'GTM-XXXXXXX';
 
-  const loadGTM = () => {
-    if (window.gtmHasLoaded) return;
-    (function(w,d,s,l,i){
-      w[l]=w[l]||[];
-      w[l].push({'gtm.start': new Date().getTime(), event:'gtm.js'});
-      var f=d.getElementsByTagName(s)[0],
-          j=d.createElement(s),
-          dl=l != 'dataLayer' ? '&l=' + l : '';
-      j.async = true;
-      j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
-      f.parentNode.insertBefore(j, f);
-    })(window,document,'script','dataLayer', GTM_ID);
-    window.gtmHasLoaded = true;
-    window.dataLayer = window.dataLayer || [];
-  };
+const loadGTM = () => {
+  if (window.gtmHasLoaded) return;
+  (function(w,d,s,l,i){
+    w[l]=w[l]||[];
+    w[l].push({'gtm.start': new Date().getTime(), event:'gtm.js'});
+    var f=d.getElementsByTagName(s)[0],
+        j=d.createElement(s),
+        dl=l != 'dataLayer' ? '&l=' + l : '';
+    j.async = true;
+    j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
+    f.parentNode.insertBefore(j, f);
+  })(window,document,'script','dataLayer', GTM_ID);
+  window.gtmHasLoaded = true;
+  window.dataLayer = window.dataLayer || [];
+};
 
-  const mapItems = (lineItems) => {
-    return lineItems.map(lineItem => ({
-      item_id: lineItem.variant.product.id,
-      item_name: lineItem.title,
-      item_brand: lineItem.variant.product.vendor,
-      item_category: lineItem.variant.product.type,
-      item_sku: lineItem.variant.sku,
-      item_variant: lineItem.variant.id,
-      variant_name: lineItem.variant.title,
-      imageURL: lineItem.variant.image?.url ? 'https:' + lineItem.variant.image.url : null,
-      price: parseFloat(lineItem.variant.price.amount),
+const mapItems = (lineItems) => {
+  return lineItems.map(lineItem => {
+    const variant = lineItem.variant || {};
+    const product = variant.product || {};
+    return {
+      item_id: product.id || variant.id,
+      item_name: product.title || lineItem.title,
+      item_brand: product.vendor || null,
+      item_category: product.type || null,
+      item_sku: variant.sku || null,
+      item_variant: variant.id,
+      variant_name: variant.title,
+      imageURL: variant.image?.src ? 'https:' + variant.image.src : null,
+      price: parseFloat(variant.price?.amount || 0),
       quantity: parseInt(lineItem.quantity, 10)
-    }));
-  };
+    };
+  });
+};
 
-  const pushEvent = (eventName, checkout, extraData = {}) => {
-    const shipping = checkout.shippingAddress;
-
-    window.dataLayer.push({
-      event: eventName,
-      debug_mode: true,
-      fired_from: 'custom_pixel',
-      token: checkout.token,
-      user_data: {
-        email: checkout.email,
-        phone: shipping.phone,
-        first_name: shipping.firstName,
-        last_name: shipping.lastName,
-        address: shipping.address1,
-        city: shipping.city,
-        region: shipping.provinceCode,
-        country: shipping.countryCode,
-        zip: shipping.zip
-      },
-      ecommerce: {
-        quantity: checkout.lineItems.length,
-        value: parseFloat(checkout.totalPrice.amount),
-        currency: checkout.currencyCode,
-        items: mapItems(checkout.lineItems)
-      },
-      ...extraData
-    });
-  };
-
-  return {
-    beginCheckout: (event) => {
-      loadGTM();
-      console.log('checkout_started', event);
-      pushEvent('begin_checkout_e2no', event.data.checkout);
+const pushEvent = (eventName, checkout, extraData = {}) => {
+  const shipping = checkout.shippingAddress || {};
+  window.dataLayer.push({
+    event: eventName,
+    debug_mode: true,
+    fired_from: 'custom_pixel',
+    token: checkout.token,
+    user_data: {
+      email: checkout.email || null,
+      phone: shipping.phone || null,
+      first_name: shipping.firstName || null,
+      last_name: shipping.lastName || null,
+      address: shipping.address1 || null,
+      city: shipping.city || null,
+      region: shipping.provinceCode || null,
+      country: shipping.countryCode || null,
+      zip: shipping.zip || null
     },
-
-    addShippingInfo: (event) => {
-      loadGTM();
-      console.log('checkout_address_info_submitted', event);
-      pushEvent('add_shipping_info_e2no', event.data.checkout);
+    ecommerce: {
+      quantity: checkout.lineItems?.length || 0,
+      value: parseFloat(checkout.totalPrice?.amount || 0),
+      currency: checkout.currencyCode,
+      items: mapItems(checkout.lineItems || [])
     },
+    ...extraData
+  });
+};
 
-    addPaymentInfo: (event) => {
-      loadGTM();
-      console.log('payment_info_submitted', event);
-      pushEvent('add_payment_info_e2no', event.data.checkout);
-    },
+// === INSCRIÇÕES FORA DO OBJETO ===
+analytics.subscribe('checkout_started', (event) => {
+  loadGTM();
+  pushEvent('begin_checkout_e2no', event.data.checkout);
+});
 
-    purchase: (event) => {
-      loadGTM();
-      console.log('checkout_completed', event);
+analytics.subscribe('checkout_address_info_submitted', (event) => {
+  loadGTM();
+  pushEvent('add_shipping_info_e2no', event.data.checkout);
+});
 
-      const checkout = event.data.checkout;
-      const order = checkout.order;
+analytics.subscribe('payment_info_submitted', (event) => {
+  loadGTM();
+  pushEvent('add_payment_info_e2no', event.data.checkout);
+});
 
-      pushEvent('purchase_e2no', checkout, {
-        transaction_id: order.id,
-        shipping: parseFloat(checkout.shippingLine?.price?.amount || 0),
-        tax: parseFloat(checkout.totalTax || 0),
-        new_customer: order.customer?.isFirstOrder || false,
-        coupon: checkout.discountApplications?.[0]?.title || null
-      });
-    }
-  };
-})();
-
-// === Registros dos eventos do Shopify Pixel ===
-analytics.subscribe('checkout_started', customPixelEvents.beginCheckout);
-analytics.subscribe('checkout_address_info_submitted', customPixelEvents.addShippingInfo);
-analytics.subscribe('payment_info_submitted', customPixelEvents.addPaymentInfo);
-analytics.subscribe('checkout_completed', customPixelEvents.purchase);
+analytics.subscribe('checkout_completed', (event) => {
+  loadGTM();
+  const checkout = event.data.checkout;
+  const order = checkout.order;
+  pushEvent('purchase_e2no', checkout, {
+    transaction_id: order.id,
+    shipping: parseFloat(checkout.shippingLine?.price?.amount || 0),
+    tax: parseFloat(checkout.totalTax || 0),
+    new_customer: order.customer?.isFirstOrder || false,
+    coupon: checkout.discountApplications?.[0]?.title || null
+  });
+});
